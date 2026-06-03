@@ -7,15 +7,20 @@ The goal is to transform raw, inconsistent data into a clean analytical dataset 
 ---
 
 ## 🗂️ Dataset
-- **Source:** Kaggle  
-- **Dataset Name:** Dirty Dataset for Data Cleaning Practice  
-- **Columns:**
-  - Customer_ID  
-  - Customer_Name  
-  - Email  
-  - Country  
-  - Last_Purchase_Date  
-  - Total_Spent($)
+## Dataset Information
+- **Source:** The data set used in this project was generated using DeepSeek AI(a generative artificial intelligence platform)  for portfolio purpose. All data is synthetic and does not represent real individuals.
+- The raw data set has 183 rows including header row, duplicates rows and blank rows and the following six columns
+Customer_ID
+
+Customer_Name
+
+Email
+
+Country
+
+Last_Purchase_Date
+
+Total_Spent($)
 
 ---
 
