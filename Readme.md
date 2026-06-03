@@ -39,6 +39,9 @@ create table customers_sales_raw(
 select * from customers_sales_raw;
 ```
 
+## Raw Data
+
+[View Raw Dataset](data/raw/data-1780491514061.csv)
 ---
 
 ## 🔹 Step 2: Create Working Copy
@@ -227,6 +230,9 @@ set Data_Quality_Flag = case
 end;
 ```
 
+## Clean Data
+
+[View Clean Dataset](data/clean/data-1780491886428.csv)
 ---
 
 # 📊 Business Analysis
@@ -299,6 +305,9 @@ order by Total_Spending desc
 limit 25;
 ```
 
+## top_25_countries_by_total_spending
+
+[View Revenue by Country](Analysis\top_25_countries_by_total_spending.csv)
 ---
 
 # 🚀 Outcome
