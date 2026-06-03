@@ -307,7 +307,7 @@ limit 25;
 
 ## top_25_countries_by_total_spending
 
-[View Revenue by Country](Analysis\top_25_countries_by_total_spending.csv)
+[View top_25_countries_by_total_spending](Analysis/top_25_countries_by_total_spending.csv)
 ---
 
 # 🚀 Outcome
