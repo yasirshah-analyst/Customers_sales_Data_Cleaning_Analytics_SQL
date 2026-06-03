@@ -24,6 +24,31 @@ Total_Spent($)
 
 ---
 
+
+```text
+START ─────────────────────────────────────────────
+
+Customer-Data-Cleaning-and-Purchase-Analysis/
+│
+├── data/
+│   ├── raw/
+│   │   ├── data-1780491514061.csv
+│   │
+│   └── clean/
+│       ├── data-1780491886428.csv
+│
+├── Analysis/
+│   ├── top_25_countries_by_total_spending.csv
+│
+├── SQL/
+│   └── Customer Data Cleaning and Purchase Analysis.sql
+│
+└── README.md
+
+END ─────────────────────────────────────────────
+``` 
+---
+
 # 🧹 Step-by-Step Data Cleaning Process
 
 ---
