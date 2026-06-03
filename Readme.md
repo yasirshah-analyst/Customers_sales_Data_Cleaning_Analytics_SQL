@@ -340,6 +340,13 @@ limit 25;
 [View top_25_countries_by_total_spending](Analysis/top_25_countries_by_total_spending.csv)
 ---
 
+### Insights Generated
+- 2.3% of Customers (4 Customers) have no purchases, highlighting minor data quality issues in the raw dataset. These entries were flagged as missing in the cleaned dataset to ensure accurate calculations in analysis.
+- While the top country generates $71,500 in total spending, the combined spending of other countries is significantly higher at around $1,447,800, showing that overall revenue is largely driven by multiple markets rather than a single country.
+- The USA has the highest total spent, but the other top countries also contribute meaningfully , supporting overall revenue growth.
+
+---
+
 # 🚀 Outcome
 - Cleaned messy real-world dataset using SQL
 - Handled missing values, duplicates, and inconsistencies
