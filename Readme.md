@@ -1,4 +1,4 @@
-# 📊 SQL Data Cleaning & Business Analysis Project
+# 📊 Customer-Data-Cleaning-and-Purchase-Analysis
 
 ## 🧾 Project Overview
 This project demonstrates an end-to-end SQL data cleaning and business analysis workflow using a messy dataset.  
