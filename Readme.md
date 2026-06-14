@@ -89,22 +89,13 @@ Identify and delete fully empty rows.
 
 ```sql
 -- Check blank rows
-select * from customers_sales_clean
-where Customer_ID is null	
-  and Customer_Name is null
-  and Email is null
-  and Country is null	
-  and Last_Purchase_Date is null	
-  and "Total_Spent($)" is null;
+SELECT *
+FROM customers_sales_clean
+WHERE Customer_ID = 'NULL';
 
 -- Delete blank rows
 delete from customers_sales_clean
-where Customer_ID is null	
-  and Customer_Name is null
-  and Email is null
-  and Country is null	
-  and Last_Purchase_Date is null	
-  and "Total_Spent($)" is null;
+WHERE Customer_ID = 'NULL';
 ```
 
 ---
