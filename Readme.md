@@ -197,24 +197,45 @@ WHERE email LIKE '%@email.';
 ## 🔹 Step 7: Standardize Country Names
 
 ```sql
-update customers_sales_clean 
-set Country = initcap(lower(trim(Country)));
+-- Wipe extra spaces and lower everything to make matching simple
+UPDATE customers_sales_clean 
+SET country = LOWER(TRIM(country));
 
-update customers_sales_clean
-set Country = 'USA'
-where Country in ('Usa','U.S.A','U.S.A.');
+-- Standardize Standalone Abbreviations (Forces them to uppercase)
+UPDATE customers_sales_clean SET country = 'USA' WHERE country IN ('usa', 'u.s.a', 'u.s.a.');
+UPDATE customers_sales_clean SET country = 'UK'  WHERE country IN ('uk', 'u.k', 'u.k.');
+UPDATE customers_sales_clean SET country = 'UAE' WHERE country IN ('uae');
 
-update customers_sales_clean
-set Country = 'UK'
-where Country in ('Uk','U.K');
+-- Handle Missing/String NULL Countries
+UPDATE customers_sales_clean
+SET country = 'Unknown'
+WHERE country IS NULL OR country = 'null' OR country = '';
 
-update customers_sales_clean
-set Country = 'UAE'
-where Country in ('Uae');
+-- Capitalize regular countries 
+-- (CRITICAL FIX: Changed to uppercase 'USA','UK','UAE' to match Step 2!)
+UPDATE customers_sales_clean
+SET country = INITCAP(country)
+WHERE country NOT IN ('USA', 'UK', 'UAE', 'Unknown')
+  AND country NOT LIKE '%/%';
 
-update customers_sales_clean
-set Country = 'Unknown'
-where Country is NULL;
+-- Capitalize full country combinations (e.g., 'china/japan' -> 'China/Japan')
+UPDATE customers_sales_clean
+SET country = INITCAP(country)
+WHERE country LIKE '%/%';
+
+-- Clean up abbreviation fragments globally (Forces 'Usa' -> 'USA' everywhere)
+-- (CRITICAL FIX: Removed WHERE country LIKE '%/%' so it fixes standalone rows too!)
+UPDATE customers_sales_clean
+SET country = REGEXP_REPLACE(
+                REGEXP_REPLACE(
+                  REGEXP_REPLACE(country, 'usa', 'USA', 'i'), 
+                'uk', 'UK', 'i'),
+              'uae', 'UAE', 'i');
+
+-- Specific literal cleanup for dotted slashes (Fixes 'U.S.A/U.K' -> 'USA/UK')
+UPDATE customers_sales_clean
+SET country = REPLACE(REPLACE(country, 'U.S.A', 'USA'), 'U.K', 'UK')
+WHERE country LIKE '%/%';
 ```
 
 ---
