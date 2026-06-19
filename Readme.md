@@ -243,17 +243,34 @@ WHERE country LIKE '%/%';
 ## 🔹 Step 8: Standardize Dates
 
 ```sql
-alter table customers_sales_clean
-add column purchase_date date;
+-- 1. First, handle any literal 'NULL' strings so they don't break the conversions
+UPDATE customers_sales_clean
+SET Last_Purchase_Date = NULL
+WHERE Last_Purchase_Date = 'NULL' OR TRIM(Last_Purchase_Date) = '';
 
-update customers_sales_clean
-set purchase_date = to_date(Last_Purchase_Date,'MM/DD/YYYY');
+-- 2. Update all formats in the existing column to a unified ISO text format (YYYY-MM-DD)
+UPDATE customers_sales_clean
+SET Last_Purchase_Date = CASE 
+    -- Handle MM/DD/YYYY (e.g., 2/23/2024 in image_74aea3.png)
+    WHEN Last_Purchase_Date ~ '^\d{1,2}/\d{1,2}/\d{4}$' 
+        THEN TO_CHAR(TO_DATE(Last_Purchase_Date, 'MM/DD/YYYY'), 'YYYY-MM-DD')
 
-update customers_sales_clean
-set purchase_date = to_date(Last_Purchase_Date,'DD-MM-YYYY');
+    -- Handle DD-MM-YYYY (e.g., 15-02-2024 in image_745c68.png)
+    WHEN Last_Purchase_Date ~ '^\d{1,2}-\d{1,2}-\d{4}$' 
+        THEN TO_CHAR(TO_DATE(Last_Purchase_Date, 'DD-MM-YYYY'), 'YYYY-MM-DD')
 
-update customers_sales_clean
-set purchase_date = to_date(Last_Purchase_Date,'DD-MON-YY');
+    -- Handle Text Dates (e.g., 5-Mar-24 or 1-Jan-24 in image_745cc5.png)
+    WHEN Last_Purchase_Date ~ '^\d{1,2}-[A-Za-z]{3}-\d{2}$' 
+        THEN TO_CHAR(TO_DATE(Last_Purchase_Date, 'DD-MON-YY'), 'YYYY-MM-DD')
+    
+    ELSE Last_Purchase_Date
+END
+WHERE Last_Purchase_Date IS NOT NULL;
+
+-- 3. Now alter the column type directly to a real DATE type
+ALTER TABLE customers_sales_clean
+ALTER COLUMN Last_Purchase_Date TYPE DATE 
+USING Last_Purchase_Date::DATE;
 ```
 
 ---
