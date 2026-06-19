@@ -179,7 +179,7 @@ WHERE email IS NULL
    OR email = 'null' 
    OR email = '';
 
--- STEP 4b: Fix trailing dots left behind from space removal (e.g., 'email.' -> 'email.com')
+-- Fix trailing dots left behind from space removal (e.g., 'email.' -> 'email.com')
 UPDATE customers_sales_clean
 SET email = email || 'com'
 WHERE email LIKE '%@email.';
