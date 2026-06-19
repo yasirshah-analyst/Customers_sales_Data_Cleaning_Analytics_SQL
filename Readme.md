@@ -293,35 +293,33 @@ ALTER TABLE customers_sales_clean
 ALTER COLUMN "Total_Spent($)" TYPE NUMERIC(12,2)
 USING "Total_Spent($)"::NUMERIC(12,2);
 ```
-
----
-
-## 🔹 Step 10: Data Issue Flag
-
-```sql
-alter table customers_sales_clean
-add column Data_Issue_Flag text;
-
-update customers_sales_clean
-set Data_Issue_Flag = case
-	when purchase_date is NULL then 'Missing_Purchase_Date'
-	else 'OK'
-end;
-```
-
 ---
 
 ## 🔹 Step 11: Data Quality Flag
 
 ```sql
-alter table customers_sales_clean
-add column Data_Quality_Flag text;
+-- Step 12: Create a Unified Data Quality Flag Column
+ALTER TABLE customers_sales_clean
+ADD COLUMN Data_Quality_Flag TEXT;
 
-update customers_sales_clean
-set Data_Quality_Flag = case
-	when "Total_Spent($)" is NULL then 'Missing_Total_Spent'
-	else 'OK'
-end;
+-- Step 13: Populate the flag based on both Date and Spent columns
+UPDATE customers_sales_clean
+SET Data_Quality_Flag = CASE
+                            -- Case 1: Both columns are missing data
+                            WHEN Last_Purchase_Date IS NULL AND "Total_Spent($)" IS NULL 
+                                THEN 'Missing Date & Total Spent'
+                            
+                            -- Case 2: Only the date is missing
+                            WHEN Last_Purchase_Date IS NULL 
+                                THEN 'Missing Purchase Date'
+                            
+                            -- Case 3: Only the total spent is missing
+                            WHEN "Total_Spent($)" IS NULL 
+                                THEN 'Missing Total Spent'
+                            
+                            -- Case 4: Everything looks good!
+                            ELSE 'OK'
+                        END;
 ```
 
 ## Clean Data
