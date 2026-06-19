@@ -333,7 +333,7 @@ SET Data_Quality_Flag = CASE
 
 ## Total Customers
 ```sql
-select count(*) as Total_Customers
+select count(*) as Total_Customers 
 from customers_sales_clean;
 ```
 
@@ -341,7 +341,7 @@ from customers_sales_clean;
 
 ## Zero Purchase Customers
 ```sql
-select count(*) as zero_purchases
+select count(*) as zero_purchases 
 from customers_sales_clean 
 where "Total_Spent($)" is null;
 ```
@@ -350,10 +350,7 @@ where "Total_Spent($)" is null;
 
 ## Percentage of No Purchases
 ```sql
-select 
-round(
-    100.0 * count(*) filter(where "Total_Spent($)" is null) / count(*),
-2) as Percentage_Of_No_Purchase
+select round(100.0 * count(*) filter(where "Total_Spent($)" is null) / count(*), 2) as Percentage_Of_No_Purchase
 from customers_sales_clean;
 ```
 
@@ -361,7 +358,7 @@ from customers_sales_clean;
 
 ## Total Revenue
 ```sql
-select sum("Total_Spent($)") as Total_Spending
+select sum("Total_Spent($)") as Total_Spending 
 from customers_sales_clean;
 ```
 
@@ -369,7 +366,7 @@ from customers_sales_clean;
 
 ## Average Spend per Customer
 ```sql
-select round(avg("Total_Spent($)"),2) as Average_Spend
+select round(avg(coalesce("Total_Spent($)", 0)), 2) as Average_Spend 
 from customers_sales_clean;
 ```
 
@@ -378,7 +375,7 @@ from customers_sales_clean;
 ## Top Revenue Country
 ```sql
 select Country,
-       sum(coalesce("Total_Spent($)",0)) as revenue
+       sum("Total_Spent($)") as revenue
 from customers_sales_clean
 group by Country
 order by revenue desc
@@ -390,7 +387,7 @@ limit 1;
 ## Revenue by Country
 ```sql
 select Country,
-       sum(coalesce("Total_Spent($)",0)) as Total_Spending
+       sum("Total_Spent($)") as Total_Spending
 from customers_sales_clean
 group by Country
 order by Total_Spending desc
