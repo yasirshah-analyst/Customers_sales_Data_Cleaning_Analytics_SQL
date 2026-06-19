@@ -18,27 +18,13 @@ select * from customers_sales_raw;
 create table customers_sales_clean as
 select * from customers_sales_raw;
 
--- step 3: Removing Blank Rows
-
 -- checking blank rows
 select * from customers_sales_clean
-where Customer_ID is null	
-	  and Customer_Name	is null
-	  and Email	is null
-	  and Country is null	
-	  and Last_Purchase_Date is null	
-	  and "Total_Spent($)" is null;
+where Customer_ID = 'NULL';
 
 --Deleting blank rows
 delete from customers_sales_clean
-where Customer_ID is null	
-	  and Customer_Name	is null
-	  and Email	is null
-	  and Country is null	
-	  and Last_Purchase_Date is null	
-	  and "Total_Spent($)" is null;
-
--- step 4: Removing Duplicate Rows
+where Customer_ID = 'NULL';	
 
 -- checking duplicate rows
 select * from (
@@ -62,14 +48,13 @@ WHERE ctid IN (
     WHERE rn > 1
 );
 
---Step 5: Clean Customer Names
+-- Checking Leading & Trailing Spaces in Customer_Name
 
--- Checking Leading & Trailing Spaces
 select Customer_Name 
 from customers_sales_clean
 where Customer_Name <> trim(Customer_Name);
 
--- Remove Leading & Trailing Spaces
+-- Remove Leading & Trailing Spaces in
 update customers_sales_clean
 set Customer_Name = trim(Customer_Name);
 
@@ -77,183 +62,143 @@ set Customer_Name = trim(Customer_Name);
 update customers_sales_clean
 set Customer_Name = Initcap(lower(Customer_Name));
 
--- Step 6: Clean Email Addresses
- 
--- Remove Spaces and lower the case
-update customers_sales_clean
-set Email = lower(trim(Email));
-
--- Fix "email com" and extra spaces inside email
-update customers_sales_clean
-set Email = replace(replace(Email,' ',''),'emailcom','email.com')
-where Email like '% %' or Email like '%email com%';
-
--- Fix "@.com"
-update customers_sales_clean
-set Email = replace(Email,'@.com','@.emailcom')
-where Email like '%@.com';
-
--- Fix Missing ".com"
-update customers_sales_clean
-set Email = Email || '.com'
-where Email not like '%.com';
-
--- Handle Missing Emails
-update customers_sales_clean
-set Email = ''
-where Email is null;
-
-update customers_sales_clean
-set Email = 'No_Email_provided'
-where Email = '';
-
--- Replacing '@@' and '..' in Email with single
+-- Standardize case and strip leading/trailing spaces
 UPDATE customers_sales_clean
-SET Email = REPLACE(REPLACE(Email, '@@', '@'), '..', '.');
+SET email = LOWER(TRIM(email));
+
+-- Wipe out ALL internal spaces inside the emails 
+-- (This instantly fixes 'email .com', 'email com', and 'davis @.com')
+UPDATE customers_sales_clean
+SET email = REPLACE(email, ' ', '')
+WHERE email LIKE '% %';
+
+-- Clean up double punctuation marks
+-- (Fixes 'email..com' and '@@email.com')
+UPDATE customers_sales_clean
+SET email = REPLACE(REPLACE(email, '@@', '@'), '..', '.');
+
+-- Fix specific missing dots or broken patterns left behind
+-- Fixes 'emailcom' -> 'email.com'
+UPDATE customers_sales_clean
+SET email = REPLACE(email, 'emailcom', 'email.com')
+WHERE email LIKE '%emailcom%';
+
+-- Fixes '@.com' -> '@email.com' (like in mia.davis@.com after spaces were removed)
+UPDATE customers_sales_clean
+SET email = REPLACE(email, '@.com', '@email.com')
+WHERE email LIKE '%@.com';
+
+-- Fix any text strings that literally say 'null' or are completely blank
+UPDATE customers_sales_clean
+SET email = 'No_Email_provided'
+WHERE email IS NULL 
+   OR email = 'null' 
+   OR email = '';
+
+-- STEP 4b: Fix trailing dots left behind from space removal (e.g., 'email.' -> 'email.com')
+UPDATE customers_sales_clean
+SET email = email || 'com'
+WHERE email LIKE '%@email.';
 
 -- Step 7: Standardize Country Names
 
--- proper case and Remove Extra Spaces
-update customers_sales_clean 
-set Country = initcap(lower(trim(Country)));
+-- 1. Wipe extra spaces and lower everything to make matching simple
+UPDATE customers_sales_clean 
+SET country = LOWER(TRIM(country));
 
--- Correcting Country Abbreviations
+-- 2. Standardize Standalone Abbreviations (Forces them to uppercase)
+UPDATE customers_sales_clean SET country = 'USA' WHERE country IN ('usa', 'u.s.a', 'u.s.a.');
+UPDATE customers_sales_clean SET country = 'UK'  WHERE country IN ('uk', 'u.k', 'u.k.');
+UPDATE customers_sales_clean SET country = 'UAE' WHERE country IN ('uae');
 
-update customers_sales_clean
-set Country = 'USA'
-where Country in('Usa','U.S.A','U.S.A.');
-
+-- 3. Handle Missing/String NULL Countries
 UPDATE customers_sales_clean
-SET country = 'UK'
-WHERE country IN ('Uk','U.K');
+SET country = 'Unknown'
+WHERE country IS NULL OR country = 'null' OR country = '';
 
+-- 4. Capitalize regular countries 
+-- (CRITICAL FIX: Changed to uppercase 'USA','UK','UAE' to match Step 2!)
 UPDATE customers_sales_clean
-SET country = 'UAE'
-WHERE country IN ('Uae');
+SET country = INITCAP(country)
+WHERE country NOT IN ('USA', 'UK', 'UAE', 'Unknown')
+  AND country NOT LIKE '%/%';
 
+-- 5. Capitalize full country combinations (e.g., 'china/japan' -> 'China/Japan')
 UPDATE customers_sales_clean
-SET country = REPLACE(
-                REPLACE(
-                  REPLACE(country, 'U.S.A', 'USA'),
-                  'Usa', 'USA'),
-                'U.K', 'UK');
+SET country = INITCAP(country)
+WHERE country LIKE '%/%';
 
--- replacing missing countries with "Unknown"
-update customers_sales_clean
-set Country = 'Unknown'
-where Country is NULL;
-
-Step 8: Standardize Dates
-
--- Create a new cleaned date column
-alter table customers_sales_clean
-add column purchase_date date;
-
--- Handle MM/DD/YYYY
-update customers_sales_clean
-set purchase_date = to_date(Last_Purchase_Date,'MM/DD/YYYY')
-where Last_Purchase_Date ~ '^\d{1,2}/\d{1,2}/\d{4}$'
-
--- Handle DD-MM-YYYY
-update customers_sales_clean
-set purchase_date = to_date(Last_Purchase_Date,'DD-MM-YYYY')
-where Last_Purchase_Date ~ '^\d{2}/\d{2}/\d{4}$'
-
--- Handle Text Dates
+-- 6. Clean up abbreviation fragments globally (Forces 'Usa' -> 'USA' everywhere)
+-- (CRITICAL FIX: Removed WHERE country LIKE '%/%' so it fixes standalone rows too!)
 UPDATE customers_sales_clean
-SET purchase_date =
-TO_DATE(Last_Purchase_Date,'DD-MON-YY')
-WHERE Last_Purchase_Date ~ '^\d{1,2}-[A-Za-z]{3}-\d{2}$';
+SET country = REGEXP_REPLACE(
+                REGEXP_REPLACE(
+                  REGEXP_REPLACE(country, 'usa', 'USA', 'i'), 
+                'uk', 'UK', 'i'),
+              'uae', 'UAE', 'i');
+
+-- 7. Specific literal cleanup for dotted slashes (Fixes 'U.S.A/U.K' -> 'USA/UK')
+UPDATE customers_sales_clean
+SET country = REPLACE(REPLACE(country, 'U.S.A', 'USA'), 'U.K', 'UK')
+WHERE country LIKE '%/%';
+
+-- 1. First, handle any literal 'NULL' strings so they don't break the conversions
+UPDATE customers_sales_clean
+SET Last_Purchase_Date = NULL
+WHERE Last_Purchase_Date = 'NULL' OR TRIM(Last_Purchase_Date) = '';
+
+-- 2. Update all formats in the existing column to a unified ISO text format (YYYY-MM-DD)
+UPDATE customers_sales_clean
+SET Last_Purchase_Date = CASE 
+    -- Handle MM/DD/YYYY (e.g., 2/23/2024 in image_74aea3.png)
+    WHEN Last_Purchase_Date ~ '^\d{1,2}/\d{1,2}/\d{4}$' 
+        THEN TO_CHAR(TO_DATE(Last_Purchase_Date, 'MM/DD/YYYY'), 'YYYY-MM-DD')
+
+    -- Handle DD-MM-YYYY (e.g., 15-02-2024 in image_745c68.png)
+    WHEN Last_Purchase_Date ~ '^\d{1,2}-\d{1,2}-\d{4}$' 
+        THEN TO_CHAR(TO_DATE(Last_Purchase_Date, 'DD-MM-YYYY'), 'YYYY-MM-DD')
+
+    -- Handle Text Dates (e.g., 5-Mar-24 or 1-Jan-24 in image_745cc5.png)
+    WHEN Last_Purchase_Date ~ '^\d{1,2}-[A-Za-z]{3}-\d{2}$' 
+        THEN TO_CHAR(TO_DATE(Last_Purchase_Date, 'DD-MON-YY'), 'YYYY-MM-DD')
+    
+    ELSE Last_Purchase_Date
+END
+WHERE Last_Purchase_Date IS NOT NULL;
+
+-- 3. Now alter the column type directly to a real DATE type
+ALTER TABLE customers_sales_clean
+ALTER COLUMN Last_Purchase_Date TYPE DATE 
+USING Last_Purchase_Date::DATE;
+
+
 
 -- Step 9: Clean Total Spent
 
--- Remove Dollar Signs and Commas
-update customers_sales_clean
-set "Total_Spent($)" = replace(replace("Total_Spent($)",'$',''),',','');
+-- 1. Remove Dollar Signs, Commas, and leading/trailing spaces
+UPDATE customers_sales_clean
+SET "Total_Spent($)" = TRIM(REPLACE(REPLACE("Total_Spent($)", '$', ''), ',', ''));
 
--- Convert Invalid Values
-update customers_sales_clean 
-set "Total_Spent($)" = ''
-where upper(trim("Total_Spent($)"))
-in ('N/A','NULL','#VALUE');
+-- 2. Convert text flags ('N/A', 'NULL', '#VALUE') directly to database NULLs
+UPDATE customers_sales_clean 
+SET "Total_Spent($)" = NULL
+WHERE UPPER(TRIM("Total_Spent($)")) IN ('N/A', 'NULL', '#VALUE') 
+   OR "Total_Spent($)" = '';
 
--- Convert Total Spent to Numeric
-alter table customers_sales_clean
-alter column "Total_Spent($)" type numeric(12,2)
-using NULLIF("Total_Spent($)",'') :: numeric;
+-- 3. Safely convert the column to a clean NUMERIC data type
+ALTER TABLE customers_sales_clean
+ALTER COLUMN "Total_Spent($)" TYPE NUMERIC(12,2)
+USING "Total_Spent($)"::NUMERIC(12,2);
 
--- Step 10: Create Data Issue Flag
-
-alter table customers_sales_clean
-add column Data_Issue_Flag text;
-
-update customers_sales_clean
-set Data_Issue_Flag = case
-						when purchase_date is NULL then 'Missing_Purchase_Date'
-						else 'OK'
-					  end;
-					  
--- Step 11: Create Data Quality Flag
-
-alter table customers_sales_clean
-add column Data_Quality_Flag text;
-
-update customers_sales_clean
-set Data_Quality_Flag = case
-							when "Total_Spent($)" is Null then 'Missing_Total_Spent'
-							else 'OK'
-						end;
 
 
 select * from customers_sales_clean
 order by Customer_Id;
 
--- Analysis
--- the dataset was analyzed to answer the following business questions
-
--- What is the total number of unique customers?
-select count(*) as Total_Customers
-from customers_sales_clean;
-
--- How many customers have made zero purchases ?
-select count(*) as zero_purchases
-from customers_sales_clean 
-where "Total_Spent($)" is null;
-
--- What percentage of customers made no purchase?
-select 
-round(100.0*count(*) filter(where "Total_Spent($)" is null)/count(*),2) 
-as Percentage_Of_No_Purchase
-from customers_sales_clean;
-
--- What is the overall total spending?
-select sum("Total_Spent($)") as "Total_Spending($)"
-from customers_sales_clean;
-
--- What is the average spend per customer?
-select 
-round(avg("Total_Spent($)") ,2) as "Average_Spend_Per_Customer($)"
-from customers_sales_clean;
-
--- Which country generate the highest revenue?
-select Country,sum(coalesce("Total_Spent($)",0)) as "revenue"
-from customers_sales_clean
-group by Country
-order by revenue desc
-limit 1;
-
--- How is total spending distributed by country?
-select Country,sum(coalesce("Total_Spent($)",0)) as "Total_Spending($)"
-from customers_sales_clean
-group by Country
-order by "Total_Spending($)" desc
-Limit 25;
-
--- checking missing values column by column
-select * from customers_sales_clean
-where Customer_Id is null or trim(Customer_Id) = ''
-	or Customer_Name is null or trim(Customer_Name) = ''
-	or Email is null or trim(Email) = ''
-	or Country is null or trim(Country) = ''
-	or Last_Purchase_Date is null or trim(Last_Purchase_Date) = ''
-	or "Total_Spent($)" is null or trim("Total_Spent($)") = '';
+UPDATE customers_sales_clean
+SET Data_Quality_Flag = CASE
+                            WHEN Last_Purchase_Date IS NULL AND "Total_Spent($)" IS NULL THEN 'Missing Date & Spent'
+                            WHEN Last_Purchase_Date IS NULL THEN 'Missing_Purchase_Date'
+                            WHEN "Total_Spent($)" IS NULL THEN 'Missing_Total_Spent'
+                            ELSE 'OK'
+                        END;
