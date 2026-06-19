@@ -133,11 +133,19 @@ WHERE ctid IN (
 We remove extra spaces and standardize naming format.
 
 ```sql
+-- Checking Leading & Trailing Spaces in Customer_Name
+
+select Customer_Name 
+from customers_sales_clean
+where Customer_Name <> trim(Customer_Name);
+
+-- Remove Leading & Trailing Spaces in
 update customers_sales_clean
 set Customer_Name = trim(Customer_Name);
 
+-- Standardize Case
 update customers_sales_clean
-set Customer_Name = initcap(lower(Customer_Name));
+set Customer_Name = Initcap(lower(Customer_Name));
 ```
 
 ---
