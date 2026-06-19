@@ -278,16 +278,20 @@ USING Last_Purchase_Date::DATE;
 ## 🔹 Step 9: Clean Total Spent
 
 ```sql
-update customers_sales_clean
-set "Total_Spent($)" = replace(replace("Total_Spent($)",'$',''),',' ,'');
+-- 1. Remove Dollar Signs, Commas, and leading/trailing spaces
+UPDATE customers_sales_clean
+SET "Total_Spent($)" = TRIM(REPLACE(REPLACE("Total_Spent($)", '$', ''), ',', ''));
 
-update customers_sales_clean 
-set "Total_Spent($)" = ''
-where upper(trim("Total_Spent($)")) in ('N/A','NULL','#VALUE');
+-- 2. Convert text flags ('N/A', 'NULL', '#VALUE') directly to database NULLs
+UPDATE customers_sales_clean 
+SET "Total_Spent($)" = NULL
+WHERE UPPER(TRIM("Total_Spent($)")) IN ('N/A', 'NULL', '#VALUE') 
+   OR "Total_Spent($)" = '';
 
-alter table customers_sales_clean
-alter column "Total_Spent($)" type numeric(12,2)
-using NULLIF("Total_Spent($)",'')::numeric;
+-- 3. Safely convert the column to a clean NUMERIC data type
+ALTER TABLE customers_sales_clean
+ALTER COLUMN "Total_Spent($)" TYPE NUMERIC(12,2)
+USING "Total_Spent($)"::NUMERIC(12,2);
 ```
 
 ---
