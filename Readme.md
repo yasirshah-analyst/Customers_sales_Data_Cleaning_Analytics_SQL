@@ -146,19 +146,43 @@ set Customer_Name = initcap(lower(Customer_Name));
 We fix formatting issues and missing values.
 
 ```sql
-update customers_sales_clean
-set Email = lower(trim(Email));
+-- Standardize case and strip leading/trailing spaces
+UPDATE customers_sales_clean
+SET email = LOWER(TRIM(email));
 
-update customers_sales_clean
-set Email = replace(replace(Email,' ',''),'emailcom','email.com');
+-- Wipe out ALL internal spaces inside the emails 
+-- (This instantly fixes 'email .com', 'email com', and 'davis @.com')
+UPDATE customers_sales_clean
+SET email = REPLACE(email, ' ', '')
+WHERE email LIKE '% %';
 
-update customers_sales_clean
-set Email = Email || '.com'
-where Email not like '%.com';
+-- Clean up double punctuation marks
+-- (Fixes 'email..com' and '@@email.com')
+UPDATE customers_sales_clean
+SET email = REPLACE(REPLACE(email, '@@', '@'), '..', '.');
 
-update customers_sales_clean
-set Email = 'No_Email_provided'
-where Email is null;
+-- Fix specific missing dots or broken patterns left behind
+-- Fixes 'emailcom' -> 'email.com'
+UPDATE customers_sales_clean
+SET email = REPLACE(email, 'emailcom', 'email.com')
+WHERE email LIKE '%emailcom%';
+
+-- Fixes '@.com' -> '@email.com' (like in mia.davis@.com after spaces were removed)
+UPDATE customers_sales_clean
+SET email = REPLACE(email, '@.com', '@email.com')
+WHERE email LIKE '%@.com';
+
+-- Fix any text strings that literally say 'null' or are completely blank
+UPDATE customers_sales_clean
+SET email = 'No_Email_provided'
+WHERE email IS NULL 
+   OR email = 'null' 
+   OR email = '';
+
+-- STEP 4b: Fix trailing dots left behind from space removal (e.g., 'email.' -> 'email.com')
+UPDATE customers_sales_clean
+SET email = email || 'com'
+WHERE email LIKE '%@email.';
 ```
 
 ---
