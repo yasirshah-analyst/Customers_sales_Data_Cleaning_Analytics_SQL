@@ -6,6 +6,14 @@ The goal is to transform raw, inconsistent data into a clean analytical dataset 
 
 ---
 
+## 🎯 Problem Definition
+
+The business has raw customer transaction data riddled with inconsistencies — duplicate records, malformed emails, inconsistent country naming, mixed date formats, and invalid spending values. Before any reliable analysis of customer behavior or revenue can happen, this data needs to be cleaned and validated.
+
+**Stakeholder question:** *How much revenue and customer activity can we confidently report, and which markets are actually driving our business?*
+
+---
+
 ## 🗂️ Dataset
 ## Dataset Information
 - **Source:** The data set used in this project was generated using DeepSeek AI(a generative artificial intelligence platform)  for portfolio purpose. All data is synthetic and does not represent real individuals.
@@ -237,6 +245,7 @@ UPDATE customers_sales_clean
 SET country = REPLACE(REPLACE(country, 'U.S.A', 'USA'), 'U.K', 'UK')
 WHERE country LIKE '%/%';
 ```
+> **Note on approach:** The email and country cleaning logic above was written to target the specific error patterns found in this dataset (e.g., `emailcom`, `u.s.a`, missing dots). This works well here, but a production-scale cleaning pipeline would typically use more generalized validation.
 
 ---
 
@@ -295,14 +304,14 @@ USING "Total_Spent($)"::NUMERIC(12,2);
 ```
 ---
 
-## 🔹 Step 11: Data Quality Flag
+## 🔹 Step 10: Data Quality Flag
 
 ```sql
--- Step 12: Create a Unified Data Quality Flag Column
+-- Step 10a: Create a Unified Data Quality Flag Column
 ALTER TABLE customers_sales_clean
 ADD COLUMN Data_Quality_Flag TEXT;
 
--- Step 13: Populate the flag based on both Date and Spent columns
+-- Step 10b: Populate the flag based on both Date and Spent columns
 UPDATE customers_sales_clean
 SET Data_Quality_Flag = CASE
                             -- Case 1: Both columns are missing data
@@ -406,10 +415,20 @@ limit 25;
 
 ---
 
+### ✅ Recommendations
+
+1. **Investigate the 4 customers with no recorded purchases.** Determine whether this is a data entry gap or genuinely inactive accounts, and consider a re-engagement outreach or data re-verification process for these records.
+2. **Continue investing in multiple markets rather than concentrating on the top country.** Since combined spending from other countries ($1,447,800) significantly outweighs the top country alone ($71,500), revenue growth strategy should stay diversified rather than over-indexing on a single market.
+3. **Standardize data entry at the source** (email format validation, dropdown country selection, consistent date input) to reduce the volume of cleaning required in future data cycles.
+
+---
+
 # 🚀 Outcome
-- Cleaned messy real-world dataset using SQL
-- Handled missing values, duplicates, and inconsistencies
-- Standardized text, dates, and numeric fields
-- Generated meaningful business insights
-- Built a strong Data Analyst portfolio project
-```
+
+- Cleaned 183 raw rows into a fully validated, analysis-ready dataset
+- Identified and flagged 4 customers (2.3%) with missing purchase data for follow-up
+- Recovered over $1.5M in total revenue previously scattered across inconsistent text, currency, and formatting issues
+- Confirmed revenue is diversified across multiple countries rather than dependent on a single top market
+- Delivered a reproducible SQL cleaning and analysis pipeline, fully documented step by step
+
+---
